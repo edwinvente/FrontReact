@@ -20,30 +20,7 @@ const FlatButtons = props => {
   return (
     <div>
       <div>
-        <Button
-          variant="fab"
-          color="primary"
-          aria-label="add"
-          className={classes.button}
-        >
-          <AddIcon />
-        </Button>
-        <Button
-          variant="fab"
-          color="secondary"
-          aria-label="edit"
-          className={classes.button}
-        >
-          <Icon>edit_icon</Icon>
-        </Button>
-        <Button
-          variant="fab"
-          disabled
-          aria-label="delete"
-          className={classes.button}
-        >
-          <DeleteIcon />
-        </Button>
+        <h1>Bienvenido/a a la app de productos!</h1>
       </div>
     </div>
   );

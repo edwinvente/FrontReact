@@ -8,24 +8,17 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import Button from '@material-ui/core/Button';
-import  ModalGeneric from "./ModalGeneric";
 import  Edit from "./Edit";
 import axios from 'axios';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import ReactModal from 'react-modal';
-
-
-
-import TablePagination from '@material-ui/core/TablePagination';
-import TableSortLabel from '@material-ui/core/TableSortLabel';
-import Toolbar from '@material-ui/core/Toolbar';
-import Typography from '@material-ui/core/Typography';
-import Checkbox from '@material-ui/core/Checkbox';
-import IconButton from '@material-ui/core/IconButton';
-import Tooltip from '@material-ui/core/Tooltip';
-import DeleteIcon from '@material-ui/icons/Delete';
-import FilterListIcon from '@material-ui/icons/FilterList';
-import { lighten } from '@material-ui/core/styles/colorManipulator';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import Dialog from '@material-ui/core/Dialog';
+import TextField from '@material-ui/core/TextField';
+import InputLabel from '@material-ui/core/InputLabel';
+import MenuItem from '@material-ui/core/MenuItem';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import FormControl from '@material-ui/core/FormControl';
+import Select from '@material-ui/core/Select';
 
 const styles = theme => ({
   root: {
@@ -36,27 +29,41 @@ const styles = theme => ({
   table: {
     minWidth: 700,
   },
+  formControl: {
+    margin: theme.spacing.unit * 1,
+    minWidth: 400,
+  }
 });
-
 
 class ProductsClass extends React.Component {
     state = {
       edit: false,
-      category: {},
-      products: []
+      name: "",
+      price: 0,
+      reference: "",
+      size: "",
+      stock: 0,
+      idUp:0,
+      status:"1",
+      products: [],
+      openModal:false,
+      openModalEdit:false,
+      campos:[
+        { name: 'Nombre',type: 'text', 'real': 'name'},
+        { name: 'Precio',type: 'number' , 'real': 'price'},
+        { name: 'Referencia',type: 'text',  'real': 'reference'},
+        { name: 'Categoria', type: 'text',  'real': 'name'},
+        { name: 'Tamaño',type: 'text', 'real': 'size'},
+        { name: 'Stock',type: 'number', 'real': 'stock'}
+      ],
+      categorias: [],
+      cateSelected: 0
     };
 
     componentDidMount() {
         
-            this.getData();
-   
-
-            // axios.post(`https://artecart.co/api/categories/store`, { json: JSON.stringify({"category":"test Prueba mas"})})
-            //     .then(res => {
-            //         console.log(res);
-            //         console.log(res.data);
-            //     })
-            // }, 3000);
+        this.getData();
+        this.getCategorias();
       }
 
     getData(){
@@ -64,66 +71,159 @@ class ProductsClass extends React.Component {
         axios.get(`https://artecart.co/api/products`)
           .then(res => {
              let { data }  = res;
-            //console.log('response', data);
-            console.log(data.products);
              this.setState({ products: data.products });
           });
         
     }
 
-    handleOpen(category) {   
-        
-      this.setState({ edit: true, category: category});
-      localStorage.clear();
-     // console.log(category);    
+    getCategorias(){
+      axios.get(`https://artecart.co/api/categories`)
+          .then(res => {
+             let { data }  = res;
+             this.setState({ categorias: data.categories });
+          });
+
+    }
+
+    handleOpen(product) {   
+
+      this.setState({
+        name: product.name,
+        price: product.price,
+        reference: product.reference,
+        size: product.size,
+        stock: product.stock,
+        cateSelected: product.category_id,
+        idUp: product.id,
+        status: product.status
+      });
+    
+      this.setState({openModalEdit:true});
+    
     }
 
     handleClose = () => {
-        this.setState({ open: false });
-        
+        this.setState({ open: false }); 
     };
 
-    handleRoute(){
-        console.log('Oeee!');
-        this.setState({ edit: false});
-        localStorage.clear();
-        // console.log(this.state.category);   
-    }
+    handleCloseModal (){
+      this.setState({openModal:false});
+    };
+
+    handleOpenModal (){
+      this.setState({openModal:true});
+    };
+
+    handleCloseModalEdit (){
+      this.setState({openModalEdit:false});
+
+    };
 
 
-    
-
-    handleEdit(){
-      let data = JSON.parse(localStorage.getItem('data'));
-      if(data){
-        let info = {
-            id: data.id,
-            category: data.category,
-            status: 1
-        }
-      // console.log('update esto eso jeje', data);
-         axios.post(`https://artecart.co/api/categories/update`, { json: JSON.stringify(info)})
-                 .then(res => {
-                 this.getData();
-                 this.handleRoute();
-         })    
-      }
+    handleDelete(product){
       
-      
-    }
-
-    handleDelete(category){
-        //console.log(category);
-        let confirm = window.confirm('¿Está seguro/a de eliminar esta categoría?');
+        let confirm = window.confirm('¿Está seguro/a de eliminar este producto?');
          if(confirm){
-            category.status = "0";
-            axios.post(`https://artecart.co/api/categories/update`, { json: JSON.stringify(category)})
-                 .then(res => {
-                 this.getData();
-                 //this.handleRoute();
-              })
-            //this.getData();
+          let info = {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            reference: product.reference,
+            size: product.size,
+            stock: product.stock,
+            category: product.category_id,
+            status: "0"  
          }
+          axios.post(`https://artecart.co/api/products/update`, { json: JSON.stringify(info)})
+               .then(res => {
+                   if(res.data.status == "success"){
+                     this.getData();
+                     this.handleCloseModalEdit();
+                      
+                   }
+           })
+           
+         }
+    }
+
+    handleChangeCategory(e){
+
+      this.setState({
+        cateSelected : e.target.value
+      });
+
+    }
+
+    handleChangeInput(e, name){
+        let { value } =  e.target;
+        switch(name){
+         case 'Nombre':
+            this.setState({ name :value });
+          break;
+
+          case 'Precio':
+            this.setState({ price :value });
+          break;
+
+          case 'Referencia':
+            this.setState({ reference :value });
+            break;
+
+          case 'Tamaño':
+            this.setState({ size :value });
+            break;
+
+          case 'Stock':
+          this.setState({ stock :value });
+          break;
+      }
+
+    }
+
+    handleCreate(){
+     
+      let info = {
+         name: this.state.name,
+         price: this.state.price,
+         reference: this.state.reference,
+         size: this.state.size,
+         stock: this.state.stock,
+         category: this.state.cateSelected  
+      }
+       axios.post(`https://artecart.co/api/products/store`, { json: JSON.stringify(info)})
+            .then(res => {
+                console.log(res);
+                console.log(res.data);
+                if(res.data.status == "success"){
+                  this.getData();
+                  this.handleCloseModal();
+                   
+                }
+        })
+    }
+
+    handleUpdate(){
+     
+      let info = {
+         id: this.state.idUp,
+         name: this.state.name,
+         price: this.state.price,
+         reference: this.state.reference,
+         size: this.state.size,
+         stock: this.state.stock,
+         category: this.state.cateSelected,
+         status: this.state.status  
+      }
+       axios.post(`https://artecart.co/api/products/update`, { json: JSON.stringify(info)})
+            .then(res => {
+                console.log(res);
+                console.log(res.data);
+                if(res.data.status == "success"){
+                  this.getData();
+                  this.handleCloseModalEdit();
+                   
+                }
+        })
     }
 
    render(){
@@ -131,13 +231,17 @@ class ProductsClass extends React.Component {
     const type = 'categoría';
 
     return (
+
+       <div>
         <Paper className={classes.root}>
           { !this.state.edit ? <Table className={classes.table}> 
           
             <TableHead>
-            <Button variant="contained" color="primary">
+          
+            <Button variant="contained" color="primary" onClick={ () => this.handleOpenModal() }>
                 Crear producto
             </Button>
+           
               <TableRow>
                 <TableCell>Id</TableCell>
                 <TableCell numeric>Nombre</TableCell>
@@ -182,6 +286,103 @@ class ProductsClass extends React.Component {
               ></Edit> }
 
         </Paper>
+
+        <Dialog aria-labelledby="simple-dialog-title" open={this.state.openModal}>
+      <DialogTitle id="simple-dialog-title">Crear Producto</DialogTitle>
+        <div>
+           { this.state.campos.map((campo, index) => {
+             let data = (campo.name == 'Categoria') ? <FormControl className={classes.formControl}>
+             <InputLabel id="demo-simple-select-label">Categoría</InputLabel>
+             <Select
+               id="demo-simple-select"
+               value={this.state.cateSelected}
+               fullWidth
+               onChange={ (e) => { this.handleChangeCategory(e)} }
+             >
+               <MenuItem value={0}>--</MenuItem>
+               {this.state.categorias.map((cate, i) => {
+                  return(<MenuItem key={i} value={cate.id}>{cate.category}</MenuItem>) 
+               })}
+               
+             </Select>
+           </FormControl> : <TextField
+                    key={index}
+                    id="standard-full-widt"
+                    label={campo.name}
+                    style={{ margin: 8 }}
+                    placeholder={campo.name}
+                    fullWidth
+                    onChange={(e) => {this.handleChangeInput(e, campo.name)}}
+                    margin="normal"
+                    InputLabelProps={{
+                        shrink: true,
+                    }}></TextField>
+              return (
+                   data
+                
+              );
+           })}
+                      
+              <Button variant="contained" color="secondary" onClick={() => this.handleCloseModal()}>
+                Cerrar
+                </Button>
+
+            <Button variant="contained" color="primary" onClick={() => this.handleCreate()}>
+                  Crear Producto
+            </Button>
+           
+        </div>
+    </Dialog>
+
+    <Dialog aria-labelledby="simple-dialog-title" open={this.state.openModalEdit}>
+      <DialogTitle id="simple-dialog-title2">Editar Producto</DialogTitle>
+        <div>
+           { this.state.campos.map((campo, index) => {
+             let data = (campo.name == 'Categoria') ? <FormControl className={classes.formControl}>
+             <InputLabel id="demo-simple-select-label2">Categoría</InputLabel>
+             <Select
+               id="demo-simple-select2"
+               value={this.state.cateSelected}
+               fullWidth
+               onChange={ (e) => { this.handleChangeCategory(e)} }
+             >
+               <MenuItem value={0}>--</MenuItem>
+               {this.state.categorias.map((cate, i) => {
+                  return(<MenuItem key={i} value={cate.id}>{cate.category}</MenuItem>) 
+               })}
+               
+             </Select>
+           </FormControl> : <TextField
+                    key={index}
+                    id="standard-full-widt"
+                    label={campo.name}
+                    style={{ margin: 8 }}
+                    placeholder={campo.name}
+                    value={this.state[campo.real]}
+                    fullWidth
+                    onChange={(e) => {this.handleChangeInput(e, campo.name)}}
+                    margin="normal"
+                    InputLabelProps={{
+                        shrink: true,
+                    }}></TextField>
+              return (
+                   data
+                
+              );
+           })}
+                      
+              <Button variant="contained" color="secondary" onClick={() => this.handleCloseModalEdit()}>
+                Cerrar
+                </Button>
+
+            <Button variant="contained" color="primary" onClick={() => this.handleUpdate()}>
+                  Actualizar Producto
+            </Button>
+           
+        </div>
+    </Dialog>
+
+        </div>
       );
    }
 
@@ -190,14 +391,7 @@ class ProductsClass extends React.Component {
 ProductsClass.propTypes = {
     classes: PropTypes.object.isRequired
   };
-  
-  // We need an intermediary variable for handling the recursive nesting.
+
  const Products = withStyles(styles)(ProductsClass);
   
 export default Products;
-
-// Categories.propTypes = {
-//   classes: PropTypes.object.isRequired,
-// };
-
-// export default withStyles(styles)(Categories);
